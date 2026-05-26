@@ -1,0 +1,1 @@
+print("This is the main file, that will execute all the functions in the blocks folder")
