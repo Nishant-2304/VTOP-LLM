@@ -195,7 +195,7 @@ def table_rows_to_ascii(page: Page, table_index: int, title: str) -> None:
     rows = table.locator("tbody tr")
     if rows.count() == 0:
         print(title)
-        print("No table rows found.")
+        print("No table rows found. Try again now.")
         return
 
     header_cells = rows.nth(0).locator("th, td")
