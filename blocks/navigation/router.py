@@ -14,17 +14,26 @@ def navigate(page: Page, main_tab: str, sub_main_tab: str) -> None:
     Example:
         navigate(page, 'academics', 'my_curriculum')
     """
-    # TODO: Fetch main_tab selector from NAVIGATION[main_tab]['main_tab']
-    # Click main tab to open menu
+    # Fetch selectors from NAVIGATION dict
     main_tab_selector = NAVIGATION[main_tab]["main_tab"]
-    page.locator(dom.SELECTOR_MAIN_TAB_TEMPLATE.format(main_tab_selector)).click()
-    page.wait_for_timeout(dom.WAIT_NAVIGATION_TIMEOUT)
-    
-    # TODO: Fetch sub_main_tab selector from NAVIGATION[main_tab]['sub_main_tab'][sub_main_tab]
-    # Click sub-menu item
     sub_tab_selector = NAVIGATION[main_tab]["sub_main_tab"][sub_main_tab]
-    page.locator(dom.SELECTOR_SUB_TAB_TEMPLATE.format(sub_tab_selector)).click()
+
+    # Locate ONLY inside top ribbon/navbar
+    top_ribbon = page.locator(
+        "nav#top-hmenu-bar div.overflow-auto"
+    )
+
+    # Find the correct main tab INSIDE the ribbon
+    top_ribbon.locator(
+        f'a:has(span:text-is("{main_tab_selector}"))'
+    ).click()
+
     page.wait_for_timeout(dom.WAIT_NAVIGATION_TIMEOUT)
-    
-    # TODO: Wait for page to load (check for specific element or network idle)
+
+    # Click submenu item
+    page.get_by_text(sub_tab_selector, exact=True).click()
+
+    page.wait_for_timeout(dom.WAIT_NAVIGATION_TIMEOUT)
+
+    # Wait for final page load
     page.wait_for_load_state(dom.LOAD_STATE_IDLE)

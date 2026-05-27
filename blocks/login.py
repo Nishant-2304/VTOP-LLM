@@ -14,26 +14,22 @@ def login(page: Page) -> None:
     load_dotenv()
 
     # Read credentials (try a few common variable names)
-    username = (
-        os.getenv("VTOP_USERNAME")
-    )
-    password = (
-        os.getenv("VTOP_PASSWORD")
-    )
+    vtop_username = (os.getenv("VTOP_USERNAME"))
+    vtop_password = (os.getenv("VTOP_PASSWORD"))
 
     page.goto(dom.LOGIN_URL)
-    page.get_by_role("link", name=dom.ROLE_STUDENT_LINK_NAME).get_by_role("button").click()
+    page.get_by_role("link", name=dom.LOGIN_STUDENT_DIV).get_by_role("button").click()
 
-    if username:
-        page.get_by_role("textbox", name=dom.ROLE_TEXTBOX_USERNAME).click()
-        page.get_by_role("textbox", name=dom.ROLE_TEXTBOX_USERNAME).fill(username)
+    if vtop_username:
+        page.get_by_role("textbox", name=dom.LOGIN_USERNAME_TEXTBOX).click()
+        page.get_by_role("textbox", name=dom.LOGIN_USERNAME_TEXTBOX).fill(vtop_username)
 
-    if password:
-        page.get_by_role("textbox", name=dom.ROLE_TEXTBOX_PASSWORD).click()
-        page.get_by_role("textbox", name=dom.ROLE_TEXTBOX_PASSWORD).fill(password)
+    if vtop_password:
+        page.get_by_role("textbox", name=dom.LOGIN_PASSWORD_TEXTBOX).click()
+        page.get_by_role("textbox", name=dom.LOGIN_PASSWORD_TEXTBOX).fill(vtop_password)
 
     page.locator(dom.SELECTOR_VTOP_LOGIN_FORM).click()
-    captcha_input = page.get_by_role("textbox", name=dom.ROLE_CAPTCHA)
+    captcha_input = page.get_by_role("textbox", name=dom.LOGIN_CAPTCHA)
 
     if captcha_input.count() == 0:
         page.wait_for_load_state("networkidle")
@@ -41,5 +37,5 @@ def login(page: Page) -> None:
 
     input("Fill the CAPTCHA in the browser, then press Enter here to continue...")
     captcha_input.click()
-    page.get_by_role("button", name=dom.ROLE_SUBMIT_BUTTON).click()
+    page.get_by_role("button", name=dom.LOGIN_SUBMIT_BUTTON).click()
     page.wait_for_timeout(15000)
