@@ -1,7 +1,7 @@
-from playwright.sync_api import Page, Playwright, sync_playwright
+"""from playwright.sync_api import Page, Playwright, sync_playwright
 
-loginUsername = "RAKSHIT1901"
-loginPassword = "{BLASTEr-13566@)"
+loginUsername = ""
+loginPassword = ""
 
 def login(page: Page) -> None:
     page.goto("https://vtop.vit.ac.in/vtop/open/page")
@@ -279,3 +279,5 @@ def run(playwright: Playwright) -> None:
 
 with sync_playwright() as playwright:
     run(playwright)
+    """
+    
