@@ -11,9 +11,14 @@ if __name__ == "__main__":
 
         # Run login
         login(page)
-
+        print("Login successful!")
         # Navigate to a specific page: Academics -> Digital Assignment Upload
+        print("Navigating to Academics -> Digital Assignment Upload...")
         navigate(page, "academics", "digital_assignment_upload")
+        print("Navigation successful!")
+        # Fetch assignment details
+        print("Fetching assignment details...")
         fetch_assignment_details(page)
+        print("Assignment details fetched successfully!")
         context.close()
         browser.close()

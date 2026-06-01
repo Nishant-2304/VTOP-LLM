@@ -1,9 +1,28 @@
-from playwright.sync_api import Page, Playwright, sync_playwright
+from pathlib import Path
+import csv
+import re
+from playwright.sync_api import Page
+from utils import dom
+
+DATA_DIR = Path(__file__).resolve().parents[2] / "data/csv"
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def sanitize_filename(value: str) -> str:
+    return re.sub(r"[^\w\-.]+", "_", value.strip())
+
+
+def write_csv_file(file_path: Path, headers, rows):
+    with file_path.open("w", newline="", encoding="utf-8") as csv_file:
+        writer = csv.writer(csv_file)
+        writer.writerow(headers)
+        writer.writerows(rows)
+
 
 def choose_semester(page):
-    semester_options = page.locator("#semesterSubId option")
+    semester_options = page.locator(dom.SEMESTER_OPTION)
     option_count = semester_options.count()
-    available_options = [] #Loads in all the available semesters and restricts to 5 sems
+    available_options = []  # Loads in all the available semesters and restricts to 5 sems
 
     if option_count == 0:
         raise RuntimeError("No semester options were found on the page.")
@@ -14,53 +33,24 @@ def choose_semester(page):
         value = option.get_attribute("value") or ""
         if value:
             available_options.append((value, label))
-            
-    print_ascii_table(["No", "Available semesters"], [(str(index), label) for index, (_, label) in enumerate(available_options[:5], start=1)])
+
+    for index, (_, label) in enumerate(available_options[:5], start=1):
+        print(f"{index}. {label}")
 
     selected_index = int(input("Select a semester by number (1-5): ").strip()) - 1
-    selected_value, _ = available_options[:5][selected_index]
-    page.locator("#semesterSubId").select_option(selected_value)
+    selected_value, selected_label = available_options[:5][selected_index]
+    page.locator(dom.SEMESTER_SELECT).select_option(selected_value)
     page.wait_for_timeout(10000)
-
-def print_ascii_table(headers, rows, title):
-    normalized_rows = [tuple(str(cell) for cell in row) for row in rows] # makes a tuple of stings for each cell in each row
-    widths = [len(header) for header in headers] # columns lengths
-
-    # Ensure widths cover all columns (extend if rows have extra columns)
-    for row in normalized_rows:
-        for index, cell in enumerate(row):
-            if index >= len(widths):
-                widths.append(len(cell))
-            else:
-                widths[index] = max(widths[index], len(cell))
-
-    # Making it look pretty
-    def border(char = "-"):
-        return "+" + "+".join(char * (width + 2) for width in widths) + "+"
-
-    def format_row(row):
-        cells = list(row) + [""] * (len(headers) - len(row))
-        return "|" + "|".join(f" {cells[index].ljust(widths[index])} " for index in range(len(headers))) + "|"
-
-    #Edge case testing
-    if title:
-        print(title)
-
-    print(border("-"))
-    print(format_row(tuple(headers)))
-    print(border("-"))
-    for row in normalized_rows:
-        print(format_row(row))
-    print(border("-"))
+    return selected_value, selected_label
 
 
 def parse_table_rows(page, table_index):
-    table = page.locator("table.customTable").nth(table_index)
+    table = page.locator(dom.CUSTOM_TABLE_SELECTOR).nth(table_index)
     table.wait_for(state="visible")
 
     rows = table.locator("tbody tr")
     if rows.count() == 0:
-        return []
+        return [], []
 
     header_cells = rows.nth(0).locator("th, td")
     headers = [header_cells.nth(index).inner_text().strip() for index in range(header_cells.count())]
@@ -79,64 +69,41 @@ def parse_table_rows(page, table_index):
 
         parsed_rows.append(row_data)
 
-    return parsed_rows
+    return headers, parsed_rows
 
 
-def table_rows_to_ascii(page, table_index, title):
-    table = page.locator("table.customTable").nth(table_index)
-    table.wait_for(state="visible")
 
-    rows = table.locator("tbody tr")
-    if rows.count() == 0:
-        print(title)
-        print("No table rows found.")
-        print("No table rows found. Try again now.")
-        return
-
-    header_cells = rows.nth(0).locator("th, td")
-    headers = [header_cells.nth(index).inner_text().strip() for index in range(header_cells.count())]
-
-    data_rows = []
-    for row_index in range(1, rows.count()):
-        row = rows.nth(row_index)
-        cells = row.locator("th, td")
-        data_rows.append(tuple(cells.nth(cell_index).inner_text().strip() for cell_index in range(cells.count())))
-
-    print_ascii_table(headers, data_rows, title)
+def format_rows_for_csv(headers, rows):
+    return [[row.get(header, "") for header in headers] for row in rows]
 
 
-def print_table(page, table_index):
-    table_rows_to_ascii(page, table_index, f"Table {table_index + 1}")
-
-
-def choose_course(page):
-    courses = parse_table_rows(page, 0)
+def choose_course(page, courses):
     if not courses:
         raise RuntimeError("No course rows found in the first table.")
 
     selectable_courses = []
-    display_rows = []
-    for _, course in enumerate(courses, start=1):
+    for course in courses:
         class_nbr = course.get("Class Number") or course.get("Class Nbr") or course.get("ClassNbr") or ""
         course_title = course.get("Course Title") or course.get("Title") or ""
-        course_code = course.get("Course Code") or course.get("Course code") or course.get("Code") or ""
+        course_type = course.get("Course Type") or course.get("Type") or ""
+        course_code = course.get("Course Code") or course.get("Code") or ""
         if class_nbr and course_title:
-            selectable_courses.append((class_nbr, course_title))
-            display_rows.append((str(len(selectable_courses)), course_title, course_code, class_nbr))
+            selectable_courses.append((class_nbr, course_title, course_type, course_code))
 
     if not selectable_courses:
         raise RuntimeError("Could not find selectable course rows with both class number and course title.")
 
-    print_ascii_table(["No", "Course Title", "Course Code", "Class Number"], display_rows, "Available courses")
+    for index, (class_nbr, title, course_type, course_code) in enumerate(selectable_courses, start=1):
+        print(f"{index}. {title} ({class_nbr}) - {course_type} - {course_code}")
 
     selected_index = int(input(f"Select a course by number (1-{len(selectable_courses)}): ").strip()) - 1
     return selectable_courses[selected_index]
 
 #Custom navigation function for course selection in assignments upload
 def open_course_page(page, class_nbr):
-    button = page.locator(f'button[onclick="javascript:myFunction(\'{class_nbr}\');"]')
+    button = page.locator(dom.COURSE_BUTTON_ONCLICK_TEMPLATE.format(class_nbr=class_nbr))
     if button.count() == 0:
-        button = page.locator(f'button[onclick*="myFunction(\'{class_nbr}\')"]')
+        button = page.locator(dom.COURSE_BUTTON_ONCLICK_PARTIAL_TEMPLATE.format(class_nbr=class_nbr))
 
     button.first.wait_for(state="visible")
     button.first.scroll_into_view_if_needed()
@@ -151,14 +118,28 @@ def fetch_assignment_details(page):
     Example:
         navigate(page)
     """
-    choose_semester(page)
-    page.locator("table.customTable").first.wait_for(state="visible")
+    selected_semester_value, selected_semester_label = choose_semester(page)
 
-    print_table(page, 0)
+    subject_headers, subject_rows = parse_table_rows(page, 0)
+    if not subject_rows:
+        raise RuntimeError("No subjects found for the selected semester.")
 
-    course_class_nbr, course_title = choose_course(page)
-    print(f"Opening course page for: {course_title} ({course_class_nbr})")
+    subject_csv_rows = format_rows_for_csv(subject_headers, subject_rows)
+
+    subject_csv_path = DATA_DIR / f"semester_subjects_{sanitize_filename(selected_semester_label)}.csv"
+    write_csv_file(subject_csv_path, subject_headers, subject_csv_rows)
+    print(f"Saved semester subjects CSV to {subject_csv_path}")
+
+    course_class_nbr, course_title, course_type, course_code = choose_course(page, subject_rows)
+    print(f"Opening course page for: {course_title} ({course_class_nbr}) - {course_type} - {course_code}")
     open_course_page(page, course_class_nbr)
 
-    page.locator("table.customTable").first.wait_for(state="visible")
-    print_table(page, 1)
+    assignment_headers, assignment_rows = parse_table_rows(page, 1)
+    if not assignment_rows:
+        raise RuntimeError("No assignments found for the selected course.")
+
+    assignment_csv_rows = format_rows_for_csv(assignment_headers, assignment_rows)
+
+    assignment_csv_path = DATA_DIR / f"assignments_{sanitize_filename(course_class_nbr)}.csv"
+    write_csv_file(assignment_csv_path, assignment_headers, assignment_csv_rows)
+    print(f"Saved assignment CSV to {assignment_csv_path}")

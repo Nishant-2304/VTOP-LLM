@@ -17,3 +17,10 @@ HOME_PAGE_MAIN_TAB = "{}"
 HOME_PAGE_SUB_TAB = "{}"
 LOAD_STATE_IDLE = "networkidle"
 WAIT_NAVIGATION_TIMEOUT = 5000
+
+# Assignment page selectors (used by blocks/assignments/router.py)
+SEMESTER_SELECT = "#semesterSubId"
+SEMESTER_OPTION = "#semesterSubId option"
+CUSTOM_TABLE_SELECTOR = "table.customTable"
+COURSE_BUTTON_ONCLICK_TEMPLATE = "button[onclick=\"javascript:myFunction('{class_nbr}');\"]"
+COURSE_BUTTON_ONCLICK_PARTIAL_TEMPLATE = "button[onclick*=\"myFunction('{class_nbr}')\"]"
