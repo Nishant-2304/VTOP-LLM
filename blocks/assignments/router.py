@@ -1,15 +1,11 @@
 from pathlib import Path
 import csv
-import re
 from playwright.sync_api import Page
 from utils import dom
+from utils.filename import make_csv_filename
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data/csv"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
-
-
-def sanitize_filename(value: str) -> str:
-    return re.sub(r"[^\w\-.]+", "_", value.strip())
 
 
 def write_csv_file(file_path: Path, headers, rows):
@@ -126,7 +122,7 @@ def fetch_assignment_details(page):
 
     subject_csv_rows = format_rows_for_csv(subject_headers, subject_rows)
 
-    subject_csv_path = DATA_DIR / f"semester_subjects_{sanitize_filename(selected_semester_label)}.csv"
+    subject_csv_path = DATA_DIR / make_csv_filename(selected_semester_label, "subjects")
     write_csv_file(subject_csv_path, subject_headers, subject_csv_rows)
     print(f"Saved semester subjects CSV to {subject_csv_path}")
 
@@ -140,6 +136,6 @@ def fetch_assignment_details(page):
 
     assignment_csv_rows = format_rows_for_csv(assignment_headers, assignment_rows)
 
-    assignment_csv_path = DATA_DIR / f"assignments_{sanitize_filename(course_class_nbr)}.csv"
+    assignment_csv_path = DATA_DIR / make_csv_filename(selected_semester_label, course_class_nbr, "assignments")
     write_csv_file(assignment_csv_path, assignment_headers, assignment_csv_rows)
     print(f"Saved assignment CSV to {assignment_csv_path}")

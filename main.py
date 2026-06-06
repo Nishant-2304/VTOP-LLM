@@ -13,6 +13,7 @@ if __name__ == "__main__":
         # Run login
         login(page)
         print("Login successful!")
+        '''
         # Navigate to a specific page: Academics -> Digital Assignment Upload
         print("Navigating to Academics -> Digital Assignment Upload...")
         navigate(page, "academics", "digital_assignment_upload")
@@ -22,6 +23,8 @@ if __name__ == "__main__":
         fetch_assignment_details(page)
         print("Assignment details fetched successfully!") # Need to change these to reflect path where details are saved
         #Fetch marks
+        '''
+        navigate(page, "examinations", "grades")
         print("Fetching Marks...")
         display_marks(page)
         print("Marks fetched successfully!")

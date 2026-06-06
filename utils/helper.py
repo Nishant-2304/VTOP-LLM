@@ -1,1 +1,0 @@
-print("This folder contains helper functions that will be used across the project, and store all placeholders for DOM item names, in case vtop later decides to change.")

@@ -1,17 +1,13 @@
 from pathlib import Path
 import csv
-import re
 from playwright.sync_api import Page
 from utils import dom
+from utils.filename import kebab_case, make_csv_filename
 from blocks.assignments import choose_semester
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data/csv"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 GRADE_CACHE = {}
-
-
-def sanitize_filename(value: str) -> str:
-    return re.sub(r"[^\w\-.]+", "_", value.strip())
 
 
 def write_csv_file(file_path: Path, headers, rows):
@@ -22,7 +18,7 @@ def write_csv_file(file_path: Path, headers, rows):
 
 
 def _semester_cache_key(semester_value, semester_label):
-    return sanitize_filename(semester_value or semester_label or "unknown_semester")
+    return kebab_case(semester_value or semester_label or "unknown semester")
 
 def parse_table_rows(page, table_index):
     table = page.locator(dom.CUSTOM_TABLE_SELECTOR).nth(table_index)
@@ -123,14 +119,12 @@ def _cache_grade_tables(page, semester_value, semester_label):
 
 def _write_grade_cache_csvs(semester_label, cached_entry):
     summary = cached_entry["summary"]
-    subject_csv_path = DATA_DIR / f"semester_subjects_{sanitize_filename(semester_label)}.csv"
+    subject_csv_path = DATA_DIR / make_csv_filename(semester_label, "grades-summary")
     summary_csv_rows = format_rows_for_csv(summary["headers"], summary["rows"])
     write_csv_file(subject_csv_path, summary["headers"], summary_csv_rows)
 
     for table_data in cached_entry["tables"][1:]:
-        detail_csv_path = DATA_DIR / (
-            f"semester_details_{sanitize_filename(semester_label)}_table_{table_data['table_index']}.csv"
-        )
+        detail_csv_path = DATA_DIR / make_csv_filename(semester_label, f"grades-table-{table_data['table_index']}")
         detail_csv_rows = format_rows_for_csv(table_data["headers"], table_data["rows"])
         write_csv_file(detail_csv_path, table_data["headers"], detail_csv_rows)
 
